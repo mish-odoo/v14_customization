@@ -1,0 +1,140 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <template id="website_product_filter.assets_frontend" inherit_id="website.assets_frontend">
+        <xpath expr="link[last()]" position="after">
+            <link rel="stylesheet" type="text/scss" href="/website_product_filter/static/src/scss/product_configurator.scss"/>
+        </xpath>
+        <xpath expr="script[last()]" position="after">
+            <script type="text/javascript" src="/website_product_filter/static/src/js/website_sale.js"></script>
+        </xpath>
+    </template>
+
+    <template id='product_size_guide_popup'>
+        <div t-if="request.env['product.size.guide'].search([])" role="dialog" class="modal" id="product_size_guide">
+            <t t-set="size_ids" t-value="request.env['product.size.guide'].search([])"/>
+            <div class="modal-dialog modal-sm">
+                <div class="modal-content">
+                    <main class="modal-body">
+                        <table name="table_product_size_guide" class="table">
+                            <thead>
+                                <tr>
+                                    <th name="th_foot_length" class="text-center">Foot Length (cm)</th>
+                                    <th name="th_eu_size" class="text-center">EU Size</th>
+                                    <th name="th_us_size" class="text-center">US Size</th>
+                                    <th name="th_uk_size" class="text-center">UK Size</th>
+                                </tr>
+                            </thead>
+                            <tbody class="product_size_guide_tbody">
+                                <tr t-foreach="size_ids" t-as="size_line">
+                                    <td><span t-esc="size_line.foot_length" /></td>
+                                    <td><span t-esc="size_line.eu_size" /></td>
+                                    <td><span t-esc="size_line.us_size" /></td>
+                                    <td><span t-esc="size_line.uk_size" /></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </main>
+                    <footer class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                    </footer>
+                </div>
+            </div>
+        </div>
+    </template>
+
+    <template id='product_image_grid'>
+        <div class='row' id="o-carousel-product">
+            <div class='col-md-6 col-lg-6 col-sm-12 col-xs-12 mb-3' t-foreach="product_image_ids" t-as="product_image">
+                <div t-if="product_image._name == 'product.image' and product_image.embed_code" class="d-flex align-items-center justify-content-center h-100 embed-responsive embed-responsive-16by9">
+                    <t t-raw="product_image.embed_code"/>
+                </div>
+                <div t-else="" t-field="product_image.image_1920" class="d-flex align-items-center justify-content-center h-100" t-options='{"widget": "image", "preview_image": "image_1024", "class": "product_detail_img mh-100 img-fluid", "alt-field": "name", "zoom": product_image.can_image_1024_be_zoomed and "image_1920", "itemprop": "image"}'/>
+            </div>
+        </div>
+    </template>
+
+    <template id="website_product_filter_inherits_shop_product_carousel" inherit_id="website_sale.shop_product_carousel" active="True" name="Product Identity Filters Hide carousel">
+        <xpath expr="//div[hasclass('carousel')]" position="replace">
+            <div id="o-carousel-product" class="carousel slide" data-ride="carousel" data-interval="0"></div>
+        </xpath>
+    </template>
+
+    <template id="products_identity_filters" inherit_id="website_sale.product" active="True" name="Product Identity Filters">
+        <xpath expr="//div[@id='product_details']/h1[@t-field='product.name']" position="replace">
+            <h1 itemprop="name" t-field="product.ecommerce_name">Product Name</h1>
+        </xpath>
+        <xpath expr="//div[@id='product_details']//t[@t-placeholder='select']" position="before">
+            <t t-if="product._has_identity_products()">
+                <t t-esc="available_sizes"/>
+                <t t-set="sizes" t-value="product._get_identity_group_sizes()"/>
+                <t t-set="colors" t-value="product._get_identity_group_colors()"/>
+                <input type="hidden" id="identity_product" name="identity_product" t-att-value="product._has_identity_products()"/>
+                <ul class="list-unstyled js_add_cart_variants flex-column">
+                    <li class="filter_color variant_attribute">
+                        <strong id="color-label" t-if="colors" class="attribute_name">Color</strong>
+                        <div class="list-unstyled">
+                            <t t-foreach="colors" t-as="c">
+                                <div class="form-group d-inline" style="margin: 0;">
+                                    <label t-attf-style="background-image:url(/web/image?model=product.color&amp;field=image&amp;id=#{c.id})" t-attf-class="css_attribute_color col-form-label" t-if="c.is_image">
+                                        <div>
+                                            <input type="radio"
+                                                t-attf-class="always js_filter_change radio_input #{c.id}"
+                                                t-att-checked="'checked' if c.id == (color and color.id) else None"
+                                                name="color_id"
+                                                t-att-value="c.id"
+                                                t-att-data-value_id="c.id"
+                                                t-att-data-value_name="c.name"
+                                                />
+                                        </div>
+                                    </label>
+                                    <label t-attf-style="background-color:#{c.color}"  t-attf-class="css_attribute_color col-form-label" t-if="not c.is_image">
+                                        <div>
+                                            <input type="radio"
+                                                t-attf-class="always js_filter_change radio_input #{c.id}"
+                                                t-att-checked="'checked' if c.id == (color and color.id) else None"
+                                                name="color_id"
+                                                t-att-value="c.id"
+                                                t-att-data-value_id="c.id"
+                                                t-att-data-value_name="c.name"
+                                                />
+                                        </div>
+                                    </label>
+                                </div>
+                            </t>
+                        </div>
+                    </li>
+                    <li class="filter_size variant_attribute">
+                        <div class="d-flex">
+                            <strong id="size-label" t-if="sizes" class="attribute_name">Size</strong>
+                            <div class="flex-grow-1 text-right">
+                                <a role="button" id="size_guide_button" class="btn-link mb-1 pt-1" data-target="#product_size_guide" data-toggle="modal"><small><b>SIZE GUIDE</b></small></a>
+                            </div>
+                        </div>
+                        <t t-call="website_product_filter.product_size_guide_popup"/>
+                        <div>
+                            <t t-foreach="sizes" t-as="s">
+                                <div class="form-group d-inline size_div" id="size_li">
+                                    <label t-attf-class="col-form-label size_label" t-attf-style="padding-bottom:20px">
+                                        <div>
+                                            <input type="radio"
+                                            t-attf-class="js_filter_change size_radio_input_#{s.id}"
+                                            t-att-checked="'checked' if s.id == (size and size.id) else None"
+                                            name="size_id"
+                                            t-att-value="s.id"
+                                            t-att-data-value_id="s.id"
+                                            t-att-data-value_name="s.name"
+                                            />
+                                            <span t-esc="s.name"/>
+                                        </div>
+                                    </label>
+                                </div>
+                            </t>
+                        </div>
+                    </li>
+                </ul>
+            </t>
+        </xpath>
+    </template>
+
+</odoo>
